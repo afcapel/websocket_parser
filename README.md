@@ -23,6 +23,8 @@ Or install it yourself as:
 ```
 require 'websocket_parser'
 
+socket = # Handle I/O with your server/event loop.
+
 parser = WebSocket::Parser.new
 
 parser.on_message do |m|
@@ -31,17 +33,23 @@ end
 
 parser.on_error do |m|
   puts "Received error #{m}"
+  socket.close!
 end
 
 parser.on_close do |m|
-  received_closes << m
+  puts "Client closed connection. Reason: #{m}"
+  socket.close!
 end
 
 parser.on_ping do |m|
-  received_pings << m
+  socket << WebSocket::Message.pong.to_data
 end
 
-parser << data
+parser << socket.read(4096)
+
+# To send a message:
+
+socket << WebSocket::Message.new('Hi there!').to_data
 
 ```
 
