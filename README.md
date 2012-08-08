@@ -46,7 +46,7 @@ parser.on_close do |status, message|
   puts "Client closed connection. Status: #{status}. Reason: #{m}"
 end
 
-parser.on_ping do |m|
+parser.on_ping do
   socket << WebSocket::Message.pong.to_data
 end
 
