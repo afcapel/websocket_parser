@@ -40,9 +40,9 @@ parser.on_close do |m|
   # According to the spec the server must respond with another
   # close message before closing the connection
 
-  socket.WebSocket::Message.close.to_data
-
+  socket << WebSocket::Message.close.to_data
   socket.close!
+
   puts "Client closed connection. Reason: #{m}"
 end
 
