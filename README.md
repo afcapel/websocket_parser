@@ -1,4 +1,5 @@
 # WebSocketParser
+[![Build Status](https://secure.travis-ci.org/afcapel/websocket_parser.png)](http://travis-ci.org/afcapel/websocket_parser)
 
 WebsocketParser is a RFC6455 compliant parser for websocket messages written in Ruby. It
 is intended to write websockets servers in Ruby, but it only handles the parsing of the
