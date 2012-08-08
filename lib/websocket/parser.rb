@@ -1,0 +1,239 @@
+module WebSocket
+  #
+  # This class parses WebSocket messages and frames.
+  #
+  # Each message is divied in frames as described in RFC 6455.
+  #
+  #    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  #   +-+-+-+-+-------+-+-------------+-------------------------------+
+  #   |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+  #   |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+  #   |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+  #   | |1|2|3|       |K|             |                               |
+  #   +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+  #   |     Extended payload length continued, if payload len == 127  |
+  #   + - - - - - - - - - - - - - - - +-------------------------------+
+  #   |                               |Masking-key, if MASK set to 1  |
+  #   +-------------------------------+-------------------------------+
+  #   | Masking-key (continued)       |          Payload Data         |
+  #   +-------------------------------- - - - - - - - - - - - - - - - +
+  #   :                     Payload Data continued ...                :
+  #   + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
+  #   |                     Payload Data continued ...                |
+  #   +---------------------------------------------------------------+
+  #
+  # for more info on the frame format see: http://tools.ietf.org/html/rfc6455#section-5
+  #
+  class Parser
+    def initialize
+      @data =  ''.force_encoding("ASCII-8BIT")
+
+      @on_message = Proc.new do |msg|
+        puts "Received message: #{msg}"
+      end
+
+      @on_error = Proc.new do |error|
+        puts "WebSocket error: #{error}"
+      end
+
+      @on_close = Proc.new do |reason|
+        puts "Should close connection. Reason: #{reason}"
+      end
+
+      @on_ping = Proc.new do |ping|
+        puts "Ping received"
+      end
+
+      @on_pong = Proc.new do |pong|
+        puts "Pong received"
+      end
+
+      @state = :header
+    end
+
+    def on_message(&callback)
+      @on_message = callback
+    end
+
+    def on_error(&callback)
+      @on_error = callback
+    end
+
+    def on_close(&callback)
+      @on_close = callback
+    end
+
+    def on_ping(&callback)
+      @on_ping = callback
+    end
+
+    def on_pong(&callback)
+      @on_pong = callback
+    end
+
+    def receive(data)
+      @data << data
+
+      read_header         if @state == :header
+      read_payload_length if @state == :payload_length
+      read_payload        if @state == :payload
+
+      process_frame if @state == :complete
+    end
+
+    alias_method :<<, :receive
+
+    def read_header
+      return unless @data.length >= 2 # Not enough data
+
+      @first_byte, @second_byte = @data.slice!(0,2).unpack('C2')
+      @state = :payload_length
+    end
+
+    def read_payload_length
+      @payload_length = if message_size == :small
+         payload_length_field
+      else
+        read_extended_payload_length
+      end
+
+      @state = :payload if @payload_length
+    end
+
+    def read_extended_payload_length
+      if message_size == :medium && @data.size >= 2
+         unpack_bytes(2,'S<')
+      elsif message_size == :large && @data.size >= 4
+        unpack_bytes(8,'Q<')
+      end
+    end
+
+    def read_payload
+      return unless @data.length >= @payload_length # Not enough data
+
+      payload_data = unpack_bytes(@payload_length, "a#{@payload_length}")
+      @payload = masked? ? unmask(payload_data) : payload_data
+
+      @state = :complete if @payload
+    end
+
+    def unpack_bytes(num, format)
+      @data.slice!(0,num).unpack(format).first
+    end
+
+    def completed_message?
+      fin? || payload
+    end
+
+    def control_frame?
+      [:close, :ping, :pong].include?(opcode)
+    end
+
+    def process_frame
+      if @current_message
+        @current_message << @payload
+      else
+        @current_message = @payload
+      end
+
+      if fin?
+        process_message
+      end
+
+      reset_frame!
+    end
+
+    def process_message
+      case opcode
+      when :text
+        @on_message.call(@current_message.force_encoding("UTF-8"))
+      when :binary
+        @on_message.call(@current_message)
+      when :close
+        @on_close.call(@current_message.encode("UTF-8"))
+      when :ping
+        @on_ping.call(@current_message.encode("UTF-8"))
+      when :pong
+        @on_pong.call(@current_message.encode("UTF-8"))
+      end
+
+      @current_message = nil
+    end
+
+    # Whether the FIN bit is set. The FIN bit indicates that
+    # this is the final fragment in a message
+    def fin?
+      @first_byte & 0b10000000 != 0
+    end
+
+    def svr1?
+      @first_byte & 0b01000000 != 0
+    end
+
+    def svr2?
+      @first_byte & 0b00100000 != 0
+    end
+
+    def svr3?
+      @first_byte & 0b00010000 != 0
+    end
+
+    def opcode
+      @opcode ||= OPCODES[@first_byte & 0b00001111]
+    end
+
+    def masked?
+      @second_byte & 0b10000000 != 0
+    end
+
+    def payload_length_field
+      @second_byte & 0b01111111
+    end
+
+    def mask_key
+      @mask_key ||= if masked?
+        @second_byte && read_uint32!
+      else
+        nil
+      end
+    end
+
+    def message_size
+      if payload_length_field < 126
+        :small
+      elsif payload_length_field == 126
+        :medium
+      elsif payload_length_field == 127
+        :large
+      end
+    end
+
+    def pack_format
+      "#{FRAME_FORMAT[message_size]}#{actual_payload_length}"
+    end
+
+    def mask(data)
+      masked_data = ''.encode!("ASCII-8BIT")
+
+      data.each_byte.each_with_index do |byte, i|
+        masked_data << byte ^ mask_key.chars[i%4]
+      end
+    end
+
+    # The same algorithm applies regardless of the direction of the translation,
+    # e.g., the same steps are applied to mask the data as to unmask the data.
+    alias_method :unmask, :mask
+
+    def reset_frame!
+      @state = :header
+
+      @first_byte  = nil
+      @second_byte = nil
+
+      @mask = nil
+
+      @payload_length = nil
+      @payload        = nil
+    end
+  end
+end
