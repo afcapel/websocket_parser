@@ -36,14 +36,14 @@ parser.on_error do |m|
   socket.close!
 end
 
-parser.on_close do |m|
+parser.on_close do |status, message|
   # According to the spec the server must respond with another
   # close message before closing the connection
 
   socket << WebSocket::Message.close.to_data
   socket.close!
 
-  puts "Client closed connection. Reason: #{m}"
+  puts "Client closed connection. Status: #{status}. Reason: #{m}"
 end
 
 parser.on_ping do |m|
