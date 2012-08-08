@@ -1,10 +1,11 @@
 require 'digest/sha1'
+require 'base64'
 
 module WebSocket
   class ClientHandshake < Http::Request
 
     def self.accept_token_for(websocket_key)
-      Digest::SHA1.base64digest(websocket_key.strip + GUID)
+      Base64.encode64(Digest::SHA1.digest(websocket_key.strip + GUID)).strip
     end
 
     def errors
