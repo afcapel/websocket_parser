@@ -7,17 +7,20 @@ module WebSocket
     end
 
     def render(out)
-      response_header = "#{@version} #{@status} #{@reason}#{CRLF}"
+      out << to_data
+    end
+
+    def to_data
+      data = "#{@version} #{@status} #{@reason}#{CRLF}"
 
       unless @headers.empty?
-        response_header << @headers.map do |header, value|
+        data << @headers.map do |header, value|
           "#{header}: #{value}"
         end.join(CRLF) << CRLF
       end
 
-      response_header << CRLF
-
-      out << response_header
+      data << CRLF
+      data
     end
   end
 end
