@@ -20,7 +20,7 @@ Or install it yourself as:
 
 ## Usage
 
-```
+```ruby
 require 'websocket_parser'
 
 socket = # Handle I/O with your server/event loop.
