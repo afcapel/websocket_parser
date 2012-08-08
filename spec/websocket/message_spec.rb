@@ -26,4 +26,17 @@ describe WebSocket::Message do
 
     message.masked?.should be_true
   end
+
+  it "allows status codes for control frames" do
+    msg = WebSocket::Message.close(1001, 'Bye')
+
+    msg.status_code.should == 1001
+    msg.payload.should == [1001, 'Bye'].pack('S<a*')
+    msg.status.should == :peer_going_away
+    msg.status_message.should == 'Bye'
+  end
+
+  it "does not allow a status message without status code" do
+    expect{ WebSocket::Message.close(nil, 'Bye') }.to raise_error(ArgumentError)
+  end
 end

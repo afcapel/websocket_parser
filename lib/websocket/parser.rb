@@ -36,15 +36,15 @@ module WebSocket
         puts "WebSocket error: #{error}"
       end
 
-      @on_close = Proc.new do |reason|
-        puts "Should close connection. Reason: #{reason}"
+      @on_close = Proc.new do |status, message|
+        puts "Should close connection. Status: #{status} Message: #{message}"
       end
 
-      @on_ping = Proc.new do |ping|
+      @on_ping = Proc.new do
         puts "Ping received"
       end
 
-      @on_pong = Proc.new do |pong|
+      @on_pong = Proc.new do
         puts "Pong received"
       end
 
@@ -161,11 +161,14 @@ module WebSocket
       when :binary
         @on_message.call(@current_message)
       when :close
-        @on_close.call(@current_message.encode("UTF-8"))
+        status_code, message = @current_message.unpack('S<a*')
+        status = STATUS_CODES[status_code]
+
+        @on_close.call(status, message)
       when :ping
-        @on_ping.call(@current_message.encode("UTF-8"))
+        @on_ping.call
       when :pong
-        @on_pong.call(@current_message.encode("UTF-8"))
+        @on_pong.call
       end
 
       @current_message = nil

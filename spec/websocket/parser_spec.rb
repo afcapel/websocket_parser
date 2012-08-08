@@ -13,9 +13,9 @@ describe WebSocket::Parser do
 
     parser.on_message { |m| received_messages << m }
     parser.on_error   { |m| received_errors << m }
-    parser.on_close   { |m| received_closes << m }
-    parser.on_ping    { |m| received_pings << m }
-    parser.on_pong    { |m| received_pongs << m }
+    parser.on_close   { |status, message| received_closes << [status, message] }
+    parser.on_ping    { received_pings << 'ping' }
+    parser.on_pong    { received_pongs << 'pong' }
 
     parser
   end
@@ -93,21 +93,31 @@ describe WebSocket::Parser do
   end
 
   it "recognizes a ping message" do
-    parser << WebSocket::Message.ping('Oh, hai!').to_data
+    parser << WebSocket::Message.ping.to_data
 
-    received_pings.first.should == 'Oh, hai!'
+    received_pings.size.should == 1
   end
 
   it "recognizes a pong message" do
-    parser << WebSocket::Message.pong('Hi there!').to_data
+    parser << WebSocket::Message.pong.to_data
 
-    received_pongs.first.should == 'Hi there!'
+    received_pongs.size.should == 1
   end
 
-  it "recognizes a close message" do
-    parser << WebSocket::Message.close('Browser leaving page').to_data
+  it "recognizes a close message with status code and message" do
+    parser << WebSocket::Message.close(1001, 'Browser leaving page').to_data
 
-    received_closes.first.should == 'Browser leaving page'
+    status, message = received_closes.first
+    status.should  == :peer_going_away # Status code 1001
+    message.should == 'Browser leaving page'
+  end
+
+  it "recognizes a close message without status code" do
+    parser << WebSocket::Message.close.to_data
+
+    status, message = received_closes.first
+    status.should  be_nil
+    message.should be_empty
   end
 
   it "recognizes a masked frame" do

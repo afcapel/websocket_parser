@@ -1,24 +1,41 @@
 module WebSocket
   class Message
-    attr_reader :type, :mask_key, :payload
+    attr_reader :type, :mask_key, :status_code, :payload, :status_message
 
     # Return a new ping message
-    def self.ping(message = '')
-      new(message, :ping)
+    def self.ping
+      new('', :ping)
     end
 
     # Return a new pong message
-    def self.pong(message = '')
-      new(message, :pong)
+    def self.pong
+      new('', :pong)
     end
 
     # Return a new close message
-    def self.close(reason = '')
-      new(reason, :close)
+    def self.close(status_code = nil, reason = nil)
+      if status_code && STATUS_CODES[status_code] == nil
+        raise ArgumentError.new('Invalid status')
+      end
+
+      if reason && status_code == nil
+        raise ArgumentError.new("Can't set a status message without status code")
+      end
+
+      new(reason, :close, status_code)
     end
 
-    def initialize(message, type = :text)
-      @type, @payload = type, message.force_encoding("ASCII-8BIT")
+    def initialize(message = '', type = :text, status_code = nil)
+      @type = type
+
+      @payload = if status_code
+        @status_code    = status_code
+        @status_message = message
+
+        [status_code, message].pack('S<a*')
+      else
+        message.force_encoding("ASCII-8BIT") if message
+      end
     end
 
     def mask!
@@ -38,7 +55,7 @@ module WebSocket
     end
 
     def payload_length
-      @payload.length
+      @payload ? @payload.length : 0
     end
 
     def masked?
@@ -49,14 +66,6 @@ module WebSocket
       message_size == :small ? nil : payload_length
     end
 
-    def to_a
-      [first_byte, second_byte, extended_payload_length, mask_key, payload].compact
-    end
-
-    def pack_format
-      WebSocket.frame_format(payload_length, masked?)
-    end
-
     def to_data
       to_a.pack(pack_format)
     end
@@ -65,7 +74,23 @@ module WebSocket
       io << to_data
     end
 
+    def control_frame?
+      [:close, :ping, :pong].include?(type)
+    end
+
+    def status
+      STATUS_CODES[status_code]
+    end
+
     private
+
+    def to_a
+      [first_byte, second_byte, extended_payload_length, mask_key, payload].compact
+    end
+
+    def pack_format
+      WebSocket.frame_format(payload_length, masked?)
+    end
 
     def first_byte
       @first_byte ||= if type == :continuation

@@ -29,12 +29,21 @@ module WebSocket
     :pong         => 10
   }
 
-  # FRAME_FORMAT = {
-  #   :small  => 'CCa',   # 2 bytes for header. N bytes for payload.
-  #   :medium => 'CCS<a', # 2 bytes for header. 2 bytes for extended length. N bytes for payload.
-  #   :large  => 'CCQ<a'  # 2 bytes for header. 4 bytes for extended length. N bytes for payload.
-  # }
+  # See: http://tools.ietf.org/html/rfc6455#section-7.4.1
+  STATUS_CODES = {
+    1000 => :normal_closure,
+    1001 => :peer_going_away,
+    1002 => :protocol_error,
+    1003 => :data_error,
+    1007 => :data_not_consistent,
+    1008 => :policy_violation,
+    1009 => :message_too_big,
+    1010 => :extension_required,
+    1011 => :unexpected_condition
+  }
 
+  # Determines how to unpack the frame depending on
+  # the payload length and wether the frame is masked
   def frame_format(payload_length, masked = false)
     format = 'CC'
 
@@ -48,7 +57,11 @@ module WebSocket
       format += 'a4'
     end
 
-    format += "a#{payload_length}"
+    if payload_length > 0
+      format += "a#{payload_length}"
+    end
+
+    format
   end
 
   def mask(data, mask_key)
