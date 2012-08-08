@@ -37,8 +37,13 @@ parser.on_error do |m|
 end
 
 parser.on_close do |m|
-  puts "Client closed connection. Reason: #{m}"
+  # According to the spec the server must respond with another
+  # close message before closing the connection
+
+  socket.WebSocket::Message.close.to_data
+
   socket.close!
+  puts "Client closed connection. Reason: #{m}"
 end
 
 parser.on_ping do |m|
@@ -52,6 +57,10 @@ parser << socket.read(4096)
 socket << WebSocket::Message.new('Hi there!').to_data
 
 ```
+
+## Status
+
+Websocket Parser is still in early development phase.
 
 ## Contributing
 
