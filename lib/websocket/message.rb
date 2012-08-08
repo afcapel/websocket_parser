@@ -1,6 +1,6 @@
 module WebSocket
   class Message
-    attr_reader :type, :payload
+    attr_reader :type, :mask_key, :payload
 
     # Return a new ping message
     def self.ping(message = '')
@@ -21,12 +21,10 @@ module WebSocket
       @type, @payload = type, message.force_encoding("ASCII-8BIT")
     end
 
-    def first_byte
-      @first_byte ||= if type == :continuation
-        OPCODE_VALUES[type]
-      else
-        0b10000000 | OPCODE_VALUES[type] # set FIN bit to true
-      end
+    def mask!
+      @second_byte = second_byte | 0b10000000 # Set masked bit
+      @mask_key = Random.new.bytes(4)
+      @payload = WebSocket.mask(@payload, @mask_key)
     end
 
     def message_size
@@ -39,16 +37,12 @@ module WebSocket
       end
     end
 
-    def second_byte
-      case message_size
-      when :small  then payload_length
-      when :medium then 126
-      when :large  then 127
-      end
-    end
-
     def payload_length
       @payload.length
+    end
+
+    def masked?
+      second_byte & 0b10000000 != 0
     end
 
     def extended_payload_length
@@ -56,11 +50,11 @@ module WebSocket
     end
 
     def to_a
-      [first_byte, second_byte, extended_payload_length, payload].compact
+      [first_byte, second_byte, extended_payload_length, mask_key, payload].compact
     end
 
     def pack_format
-      "#{FRAME_FORMAT[message_size]}#{payload_length}"
+      WebSocket.frame_format(payload_length, masked?)
     end
 
     def to_data
@@ -69,6 +63,24 @@ module WebSocket
 
     def write(io)
       io << to_data
+    end
+
+    private
+
+    def first_byte
+      @first_byte ||= if type == :continuation
+        OPCODE_VALUES[type]
+      else
+        0b10000000 | OPCODE_VALUES[type] # set FIN bit to true
+      end
+    end
+
+    def second_byte
+      @second_byte ||= case message_size
+      when :small  then payload_length
+      when :medium then 126
+      when :large  then 127
+      end
     end
   end
 end

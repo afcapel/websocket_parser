@@ -17,4 +17,13 @@ describe WebSocket::Message do
     ext_length.should  == text.length
     payload.should     == text
   end
+
+  it "can be masked" do
+    message = WebSocket::Message.new('The man with the Iron Mask')
+    message.masked?.should be_false
+
+    message.mask!
+
+    message.masked?.should be_true
+  end
 end

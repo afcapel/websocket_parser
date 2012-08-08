@@ -5,6 +5,8 @@ require "websocket/message"
 require "websocket/parser"
 
 module WebSocket
+  extend self
+
   PROTOCOL_VERSION = 13 # RFC 6455
   GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -27,9 +29,41 @@ module WebSocket
     :pong         => 10
   }
 
-  FRAME_FORMAT = {
-    :small  => 'CCa',   # 2 bytes for header. N bytes for payload.
-    :medium => 'CCS<a', # 2 bytes for header. 2 bytes for extended length. N bytes for payload.
-    :large  => 'CCQ<a'  # 2 bytes for header. 4 bytes for extended length. N bytes for payload.
-  }
+  # FRAME_FORMAT = {
+  #   :small  => 'CCa',   # 2 bytes for header. N bytes for payload.
+  #   :medium => 'CCS<a', # 2 bytes for header. 2 bytes for extended length. N bytes for payload.
+  #   :large  => 'CCQ<a'  # 2 bytes for header. 4 bytes for extended length. N bytes for payload.
+  # }
+
+  def frame_format(payload_length, masked = false)
+    format = 'CC'
+
+    if payload_length > 65_535
+      format += 'Q<'
+    elsif payload_length > 125
+      format += 'S<'
+    end
+
+    if masked
+      format += 'a4'
+    end
+
+    format += "a#{payload_length}"
+  end
+
+  def mask(data, mask_key)
+    masked_data = ''.encode!("ASCII-8BIT")
+    mask_bytes = mask_key.bytes.to_a
+
+    data.bytes.each_with_index do |byte, i|
+      masked_data << (byte ^ mask_bytes[i%4])
+    end
+
+    masked_data
+  end
+
+  # The same algorithm applies regardless of the direction of the translation,
+  # e.g., the same steps are applied to mask the data as to unmask the data.
+  alias_method :unmask, :mask
+
 end

@@ -109,4 +109,13 @@ describe WebSocket::Parser do
 
     received_closes.first.should == 'Browser leaving page'
   end
+
+  it "recognizes a masked frame" do
+    msg = WebSocket::Message.new('Once upon a time')
+    msg.mask!
+
+    parser << msg.to_data
+
+    received_messages.first.should == 'Once upon a time'
+  end
 end

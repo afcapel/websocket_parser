@@ -76,6 +76,7 @@ module WebSocket
 
       read_header         if @state == :header
       read_payload_length if @state == :payload_length
+      read_mask_key       if @state == :mask
       read_payload        if @state == :payload
 
       process_frame if @state == :complete
@@ -97,7 +98,9 @@ module WebSocket
         read_extended_payload_length
       end
 
-      @state = :payload if @payload_length
+      return unless @payload_length
+
+      @state = masked? ? :mask : :payload
     end
 
     def read_extended_payload_length
@@ -108,21 +111,29 @@ module WebSocket
       end
     end
 
+    def read_mask_key
+      return unless @data.size >= 4
+
+      @mask_key = unpack_bytes(4,'a4')
+      @state = :payload
+    end
+
     def read_payload
       return unless @data.length >= @payload_length # Not enough data
 
       payload_data = unpack_bytes(@payload_length, "a#{@payload_length}")
-      @payload = masked? ? unmask(payload_data) : payload_data
+
+      @payload = if masked?
+        WebSocket.unmask(payload_data, @mask_key)
+      else
+        payload_data
+      end
 
       @state = :complete if @payload
     end
 
     def unpack_bytes(num, format)
       @data.slice!(0,num).unpack(format).first
-    end
-
-    def completed_message?
-      fin? || payload
     end
 
     def control_frame?
@@ -166,18 +177,6 @@ module WebSocket
       @first_byte & 0b10000000 != 0
     end
 
-    def svr1?
-      @first_byte & 0b01000000 != 0
-    end
-
-    def svr2?
-      @first_byte & 0b00100000 != 0
-    end
-
-    def svr3?
-      @first_byte & 0b00010000 != 0
-    end
-
     def opcode
       @opcode ||= OPCODES[@first_byte & 0b00001111]
     end
@@ -188,14 +187,6 @@ module WebSocket
 
     def payload_length_field
       @second_byte & 0b01111111
-    end
-
-    def mask_key
-      @mask_key ||= if masked?
-        @second_byte && read_uint32!
-      else
-        nil
-      end
     end
 
     def message_size
@@ -209,20 +200,8 @@ module WebSocket
     end
 
     def pack_format
-      "#{FRAME_FORMAT[message_size]}#{actual_payload_length}"
+      WebSocket.frame_format(actual_payload_length, masked?)
     end
-
-    def mask(data)
-      masked_data = ''.encode!("ASCII-8BIT")
-
-      data.each_byte.each_with_index do |byte, i|
-        masked_data << byte ^ mask_key.chars[i%4]
-      end
-    end
-
-    # The same algorithm applies regardless of the direction of the translation,
-    # e.g., the same steps are applied to mask the data as to unmask the data.
-    alias_method :unmask, :mask
 
     def reset_frame!
       @state = :header
