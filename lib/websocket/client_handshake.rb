@@ -33,15 +33,17 @@ module WebSocket
       return true
     end
 
-    def accept_response
+    def response_headers
       websocket_key = headers['Sec-Websocket-Key']
-      response_headers = {
+      {
         'Upgrade'    => 'websocket',
         'Connection' => 'Upgrade',
         'Sec-WebSocket-Accept' => ClientHandshake.accept_token_for(websocket_key)
       }
+    end
 
-      ServerHandshake.new(101, '1.1', response_headers)
+    def accept_response
+      ServerHandshake.new(response_headers)
     end
   end
 end

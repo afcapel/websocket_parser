@@ -2,8 +2,7 @@ module WebSocket
   class ServerHandshake < Http::Response
     CRLF = "\r\n"
 
-    def initialize(status = 101, version = "1.1", headers = {}, body = nil, &body_proc)
-      @status, @version, @body, @body_proc = status, version, body, body_proc
+    def initialize(headers = {})
       @headers = headers
     end
 
@@ -12,7 +11,7 @@ module WebSocket
     end
 
     def to_data
-      data = "#{@version} #{@status} #{@reason}#{CRLF}"
+      data = "HTTP/1.1 101 Switching Protocols#{CRLF}"
 
       unless @headers.empty?
         data << @headers.map do |header, value|
@@ -21,7 +20,6 @@ module WebSocket
       end
 
       data << CRLF
-      data
     end
   end
 end
