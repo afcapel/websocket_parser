@@ -19,7 +19,32 @@ Or install it yourself as:
 
     $ gem install websocket_parser
 
-## Usage
+## Usage. TMTOWTDI.
+
+### Use return values
+
+The simplest way to use the websocket parser is to create a new one, fetch
+it with data and call the parse methods.
+
+```ruby
+require 'websocket_parser'
+
+parser = WebSocket::Parser.new
+
+parser.append data
+
+parser.parse # return next message or nil
+parser.parse_all # return all parsed messages
+
+```
+
+The returned messages are instances of WebSocket::Message and can be either text messages
+or control frames. Check WebSocket::Message#type to know the kind of a message.
+
+### Use callbacks
+
+In addition to return values, you can register callbacks to get notified when a certain event
+happens.
 
 ```ruby
 require 'websocket_parser'

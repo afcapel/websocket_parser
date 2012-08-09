@@ -1,7 +1,5 @@
 module WebSocket
   class ServerHandshake < Http::Response
-    CRLF = "\r\n"
-
     def initialize(headers = {})
       @headers = headers
     end
@@ -20,6 +18,7 @@ module WebSocket
       end
 
       data << CRLF
+      data
     end
   end
 end

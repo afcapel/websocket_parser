@@ -26,6 +26,19 @@ describe WebSocket::Parser do
     received_messages.first.should == 'Once upon a time'
   end
 
+  it "returns parsed messages on parse" do
+    msg1 = WebSocket::Message.new('Now is the winter of our discontent').to_data
+    msg2 = WebSocket::Message.new('Made glorious summer by this sun of York').to_data
+
+    messages = parser << msg1.slice!(0,5)
+    messages.should be_empty # We don't have a complete message yet
+
+    messages = parser << msg1 + msg2
+
+    messages[0].should == 'Now is the winter of our discontent'
+    messages[1].should == 'Made glorious summer by this sun of York'
+  end
+
   it "can receive a message in parts" do
     data = WebSocket::Message.new('Once upon a time').to_data
     parser << data.slice!(0, 5)

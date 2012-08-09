@@ -11,6 +11,7 @@ module WebSocket
 
   PROTOCOL_VERSION = 13 # RFC 6455
   GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  CRLF = "\r\n"
 
   # see http://tools.ietf.org/html/rfc6455#section-11.8
   OPCODES = {

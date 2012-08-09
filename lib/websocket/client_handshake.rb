@@ -33,6 +33,10 @@ module WebSocket
       return true
     end
 
+    def accept_response
+      ServerHandshake.new(response_headers)
+    end
+
     def response_headers
       websocket_key = headers['Sec-Websocket-Key']
       {
@@ -42,8 +46,13 @@ module WebSocket
       }
     end
 
-    def accept_response
-      ServerHandshake.new(response_headers)
+    def to_data
+      data = "#{method.to_s.upcase} #{uri.path} HTTP/#{version}#{CRLF}"
+      @headers.each do |field, value|
+        data << "#{field}: #{value}#{CRLF}"
+      end
+      data << CRLF
+      data
     end
   end
 end

@@ -25,6 +25,8 @@ module WebSocket
   # for more info on the frame format see: http://tools.ietf.org/html/rfc6455#section-5
   #
   class Parser
+    attr_writer :on_message, :on_error, :on_close, :on_ping, :on_pong
+
     def initialize
       @data =  ''.force_encoding("ASCII-8BIT")
       @state = :header
@@ -50,18 +52,36 @@ module WebSocket
       @on_pong = callback
     end
 
-    def receive(data)
+    # Stores the data in a buffer for later parsing
+    def append(data)
       @data << data
+    end
 
+    # Receive data and parse it return an array of parsed messages
+    def receive(data)
+      append(data) && next_messages
+    end
+
+    alias_method :<<, :receive
+
+    # Parse all messages in buffer
+    def next_messages
+      Array.new.tap do |messages|
+        while msg = next_message do
+           messages << msg
+         end
+      end
+    end
+
+    # Parse next message in buffer
+    def next_message
       read_header         if @state == :header
       read_payload_length if @state == :payload_length
       read_mask_key       if @state == :mask
       read_payload        if @state == :payload
 
-      process_frame if @state == :complete
+      @state == :complete ? process_frame! : nil
     end
-
-    alias_method :<<, :receive
 
     private
 
@@ -74,7 +94,7 @@ module WebSocket
 
     def read_payload_length
       @payload_length = if message_size == :small
-         payload_length_field
+        payload_length_field
       else
         read_extended_payload_length
       end
@@ -86,7 +106,7 @@ module WebSocket
 
     def read_extended_payload_length
       if message_size == :medium && @data.size >= 2
-         unpack_bytes(2,'S<')
+        unpack_bytes(2,'S<')
       elsif message_size == :large && @data.size >= 4
         unpack_bytes(8,'Q<')
       end
@@ -121,21 +141,23 @@ module WebSocket
       [:close, :ping, :pong].include?(opcode)
     end
 
-    def process_frame
+    def process_frame!
       if @current_message
         @current_message << @payload
       else
         @current_message = @payload
       end
 
-      if fin?
-        process_message
-      end
+      completed_message = fin? ? @current_message :nil
+
+      process_message! if fin?
 
       reset_frame!
+
+      completed_message
     end
 
-    def process_message
+    def process_message!
       case opcode
       when :text
         @on_message.call(@current_message.force_encoding("UTF-8")) if @on_message
@@ -151,7 +173,6 @@ module WebSocket
 
         @on_close.call(status, message) if @on_close
       end
-
       @current_message = nil
     end
 
