@@ -21,10 +21,10 @@ Or install it yourself as:
 
 ## Usage. TMTOWTDI.
 
-### Use return values
+### Return values
 
 The simplest way to use the websocket parser is to create a new one, fetch
-it with data and call the parse methods.
+it with data and query it for new messages.
 
 ```ruby
 require 'websocket_parser'
@@ -33,13 +33,17 @@ parser = WebSocket::Parser.new
 
 parser.append data
 
-parser.parse # return next message or nil
-parser.parse_all # return all parsed messages
+parser.next_message  # return next message or nil
+parser.next_messages # return an array with all parsed messages
+
+# To send a message:
+
+socket << WebSocket::Message.new('Hi there!').to_data
 
 ```
 
-The returned messages are instances of WebSocket::Message and can be either text messages
-or control frames. Check WebSocket::Message#type to know the kind of a message.
+Only text or binary messages are returned on the parse methods. To intercept
+control frames use the parser's callbacks.
 
 ### Use callbacks
 
@@ -77,10 +81,6 @@ parser.on_ping do
 end
 
 parser << socket.read(4096)
-
-# To send a message:
-
-socket << WebSocket::Message.new('Hi there!').to_data
 
 ```
 
