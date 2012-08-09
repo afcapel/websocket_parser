@@ -63,6 +63,8 @@ module WebSocket
 
     alias_method :<<, :receive
 
+    private
+
     def read_header
       return unless @data.length >= 2 # Not enough data
 
