@@ -27,27 +27,6 @@ module WebSocket
   class Parser
     def initialize
       @data =  ''.force_encoding("ASCII-8BIT")
-
-      @on_message = Proc.new do |msg|
-        puts "Received message: #{msg}"
-      end
-
-      @on_error = Proc.new do |error|
-        puts "WebSocket error: #{error}"
-      end
-
-      @on_close = Proc.new do |status, message|
-        puts "Should close connection. Status: #{status} Message: #{message}"
-      end
-
-      @on_ping = Proc.new do
-        puts "Ping received"
-      end
-
-      @on_pong = Proc.new do
-        puts "Pong received"
-      end
-
       @state = :header
     end
 
@@ -157,18 +136,18 @@ module WebSocket
     def process_message
       case opcode
       when :text
-        @on_message.call(@current_message.force_encoding("UTF-8"))
+        @on_message.call(@current_message.force_encoding("UTF-8")) if @on_message
       when :binary
-        @on_message.call(@current_message)
+        @on_message.call(@current_message) if @on_message
+      when :ping
+        @on_ping.call if @on_ping
+      when :pong
+        @on_pong.call if @on_ping
       when :close
         status_code, message = @current_message.unpack('S<a*')
         status = STATUS_CODES[status_code]
 
-        @on_close.call(status, message)
-      when :ping
-        @on_ping.call
-      when :pong
-        @on_pong.call
+        @on_close.call(status, message) if @on_close
       end
 
       @current_message = nil

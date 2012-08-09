@@ -1,5 +1,6 @@
 module WebSocket
   class ServerHandshake < Http::Response
+    CRLF = "\r\n"
 
     def initialize(status = 101, version = "1.1", headers = {}, body = nil, &body_proc)
       @status, @version, @body, @body_proc = status, version, body, body_proc
