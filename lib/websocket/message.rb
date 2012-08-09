@@ -44,26 +44,12 @@ module WebSocket
       @payload = WebSocket.mask(@payload, @mask_key)
     end
 
-    def message_size
-      if payload_length < 126
-        :small
-      elsif payload_length < 65_536 # fits in 2 bytes
-        :medium
-      else
-        :large
-      end
-    end
-
     def payload_length
       @payload ? @payload.length : 0
     end
 
     def masked?
       second_byte & 0b10000000 != 0
-    end
-
-    def extended_payload_length
-      message_size == :small ? nil : payload_length
     end
 
     def to_data
@@ -90,6 +76,20 @@ module WebSocket
 
     def pack_format
       WebSocket.frame_format(payload_length, masked?)
+    end
+
+    def message_size
+      if payload_length < 126
+        :small
+      elsif payload_length < 65_536 # fits in 2 bytes
+        :medium
+      else
+        :large
+      end
+    end
+
+    def extended_payload_length
+      message_size == :small ? nil : payload_length
     end
 
     def first_byte
