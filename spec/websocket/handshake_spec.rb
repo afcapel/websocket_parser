@@ -23,7 +23,6 @@ describe WebSocket::ClientHandshake do
   it "can generate an accept response for the client" do
     response = client_handshake.accept_response
 
-    response.status.should == 101
     response.headers['Upgrade'].should == 'websocket'
     response.headers['Connection'].should == 'Upgrade'
     response.headers['Sec-WebSocket-Accept'].should == 's3pPLMBiTxaQ9kYGzzhZRbK+xOo='
