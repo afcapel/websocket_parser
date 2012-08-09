@@ -13,11 +13,6 @@ module WebSocket
     end
 
     def valid?
-      if headers['Connection'].downcase != 'upgrade'
-        errors << 'Not connection upgrade'
-        return false
-      end
-
       if headers['Upgrade'].downcase != 'websocket'
         errors << 'Connection upgrade is not for websocket'
         return false
