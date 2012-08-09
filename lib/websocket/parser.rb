@@ -137,6 +137,10 @@ module WebSocket
       @data.slice!(0,num).unpack(format).first
     end
 
+    def message_frame?
+      [:text, :binary].include?(opcode)
+    end
+
     def control_frame?
       [:close, :ping, :pong].include?(opcode)
     end
@@ -148,7 +152,11 @@ module WebSocket
         @current_message = @payload
       end
 
-      completed_message = fin? ? @current_message :nil
+      completed_message = if fin? && message_frame?
+        @current_message
+      else
+        nil
+      end
 
       process_message! if fin?
 

@@ -39,6 +39,13 @@ describe WebSocket::Parser do
     messages[1].should == 'Made glorious summer by this sun of York'
   end
 
+  it "does not return control frames" do
+    msg = WebSocket::Message.close(1001, 'Goodbye!').to_data
+
+    messages = parser << msg
+    messages.should be_empty
+  end
+
   it "can receive a message in parts" do
     data = WebSocket::Message.new('Once upon a time').to_data
     parser << data.slice!(0, 5)
