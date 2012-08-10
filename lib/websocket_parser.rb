@@ -9,6 +9,8 @@ require "websocket/parser"
 module WebSocket
   extend self
 
+  class WebSocket::ParserError < StandardError; end
+
   PROTOCOL_VERSION = 13 # RFC 6455
   GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
   CRLF = "\r\n"

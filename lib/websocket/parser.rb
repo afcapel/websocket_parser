@@ -81,6 +81,13 @@ module WebSocket
       read_payload        if @state == :payload
 
       @state == :complete ? process_frame! : nil
+
+    rescue StandardError => ex
+      if @on_error
+        @on_error.call(ex.message)
+      else
+        raise ex
+      end
     end
 
     private
@@ -106,9 +113,13 @@ module WebSocket
 
     def read_extended_payload_length
       if message_size == :medium && @data.size >= 2
-        unpack_bytes(2,'S<')
+        size = unpack_bytes(2,'S<')
+        ParserError.new("Wrong payload length. Expected to be greater than 125") unless size > 125
+        size
       elsif message_size == :large && @data.size >= 4
-        unpack_bytes(8,'Q<')
+        size = unpack_bytes(8,'Q<')
+         ParserError.new("Wrong payload length. Expected to be greater than 65535") unless size > 65_535
+        size
       end
     end
 
@@ -158,7 +169,7 @@ module WebSocket
         nil
       end
 
-      process_message! if fin?
+      fin? ? process_message! : opcode # store the opcode
 
       reset_frame!
 
@@ -168,7 +179,10 @@ module WebSocket
     def process_message!
       case opcode
       when :text
-        @on_message.call(@current_message.force_encoding("UTF-8")) if @on_message
+        msg = @current_message.force_encoding("UTF-8")
+        raise ParserError.new('Payload data is not valid UTF-8') unless msg.valid_encoding?
+
+        @on_message.call(msg) if @on_message
       when :binary
         @on_message.call(@current_message) if @on_message
       when :ping
@@ -181,6 +195,9 @@ module WebSocket
 
         @on_close.call(status, message) if @on_close
       end
+
+      # Reset message
+      @opcode = nil
       @current_message = nil
     end
 
@@ -191,7 +208,12 @@ module WebSocket
     end
 
     def opcode
-      @opcode ||= OPCODES[@first_byte & 0b00001111]
+      @opcode ||= begin
+        num = @first_byte & 0b00001111
+        opcode = OPCODES[num]
+        raise ParserError.new("Unknown opcode #{num}") unless opcode
+        opcode
+      end
     end
 
     def masked?
