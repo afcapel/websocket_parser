@@ -92,26 +92,6 @@ describe WebSocket::Parser do
     received_messages.first.should == text
   end
 
-  it "can receive multiframe messages" do
-    frame1 = WebSocket::Message.new("It is a truth universally acknowledged,", :continuation)
-    frame2 = WebSocket::Message.new("that a single man in possession of a good fortune,", :continuation)
-    frame3 = WebSocket::Message.new("must be in want of a wife.")
-
-    parser << frame1.to_data
-
-    received_messages.should be_empty
-
-    parser << frame2.to_data
-
-    received_messages.should be_empty
-
-    parser << frame3.to_data
-
-    received_messages.first.should == "It is a truth universally acknowledged," +
-    "that a single man in possession of a good fortune," +
-    "must be in want of a wife."
-  end
-
   it "recognizes a ping message" do
     parser << WebSocket::Message.ping.to_data
 
@@ -148,4 +128,58 @@ describe WebSocket::Parser do
 
     received_messages.first.should == 'Once upon a time'
   end
+
+  context "examples from the spec" do
+    # These are literal examples from the spec
+
+    it "recognizes single-frame unmasked text message" do
+      parser << [0x81, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f].pack('C*')
+
+      received_messages.first.should == 'Hello'
+    end
+
+    it "recognizes single-frame masked text message" do
+      parser << [0x81, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58].pack('C*')
+
+      received_messages.first.should == 'Hello'
+    end
+
+    it "recognizes a fragmented unmasked text message" do
+      parser << [0x01, 0x03, 0x48, 0x65, 0x6c].pack('C*') # contains "Hel"
+
+      received_messages.should be_empty
+
+      parser << [0x80, 0x02, 0x6c, 0x6f].pack('C*') # contains "lo"
+
+      received_messages.first.should == 'Hello'
+    end
+
+    it "recognizes an unnmasked ping request" do
+      parser << [0x89, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f].pack('C*')
+
+      received_pings.size.should == 1
+    end
+
+    it "recognizes a masked pong response" do
+      parser << [0x8a, 0x85, 0x37, 0xfa, 0x21, 0x3d, 0x7f, 0x9f, 0x4d, 0x51, 0x58].pack('C*')
+
+      received_pongs.size.should == 1
+    end
+
+    it "recognizes 256 bytes binary message in a single unmasked frame" do
+      data = Array.new(256) { rand(256) }.pack('c*')
+      parser << [0x82, 0x7E, 0x0100].pack('CCS<') + data
+
+      received_messages.first.should == data
+    end
+
+    it "recoginzes 64KiB binary message in a single unmasked frame" do
+      data = Array.new(65536) { rand(256) }.pack('c*')
+      parser << [0x82, 0x7F, 0x0000000000010000].pack('CCQ<') + data
+
+      received_messages.first.should == data
+    end
+  end
+
+
 end
