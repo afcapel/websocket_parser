@@ -53,9 +53,9 @@ module WebSocket
     format = 'CC'
 
     if payload_length > 65_535
-      format += 'Q<'
+      format += 'Q>'
     elsif payload_length > 125
-      format += 'S<'
+      format += 'S>'
     end
 
     if masked
