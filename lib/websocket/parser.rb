@@ -55,6 +55,7 @@ module WebSocket
     # Stores the data in a buffer for later parsing
     def append(data)
       @data << data
+      @data.force_encoding("ASCII-8BIT")
     end
 
     # Receive data and parse it return an array of parsed messages
