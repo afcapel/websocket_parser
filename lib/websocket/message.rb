@@ -8,8 +8,7 @@ module WebSocket
     end
 
     # Return a new pong message
-    def self.pong(ping = nil)
-      payload = ping ? ping.payload : ''
+    def self.pong(payload = '')
       new(payload, :pong)
     end
 

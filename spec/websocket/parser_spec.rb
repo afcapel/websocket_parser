@@ -14,8 +14,8 @@ describe WebSocket::Parser do
     parser.on_message { |m| received_messages << m }
     parser.on_error   { |m| received_errors << m }
     parser.on_close   { |status, message| received_closes << [status, message] }
-    parser.on_ping    { received_pings << 'ping' }
-    parser.on_pong    { received_pongs << 'pong' }
+    parser.on_ping    { |m| received_pings << m }
+    parser.on_pong    { |m| received_pongs << m }
 
     parser
   end

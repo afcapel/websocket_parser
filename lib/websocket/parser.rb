@@ -187,9 +187,9 @@ module WebSocket
       when :binary
         @on_message.call(@current_message) if @on_message
       when :ping
-        @on_ping.call if @on_ping
+        @on_ping.call(@current_message) if @on_ping
       when :pong
-        @on_pong.call if @on_ping
+        @on_pong.call(@current_message) if @on_ping
       when :close
         status_code, message = @current_message.unpack('S<a*')
         status = STATUS_CODES[status_code]
