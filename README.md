@@ -84,10 +84,6 @@ parser << socket.read(4096)
 
 ```
 
-## Status
-
-Websocket Parser is still in early development phase.
-
 ## Contributing
 
 1. Fork it
