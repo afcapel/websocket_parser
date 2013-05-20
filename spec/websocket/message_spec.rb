@@ -42,7 +42,7 @@ describe WebSocket::Message do
 
   it "can create a pong message from a ping message" do
     ping = WebSocket::Message.ping('Roman Ping Pong')
-    pong = WebSocket::Message.pong(ping)
+    pong = WebSocket::Message.pong(ping.payload)
 
     pong.type.should    == :pong
     pong.payload.should == 'Roman Ping Pong'
