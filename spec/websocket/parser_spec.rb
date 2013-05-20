@@ -180,6 +180,4 @@ describe WebSocket::Parser do
       received_messages.first.should == data
     end
   end
-
-
 end

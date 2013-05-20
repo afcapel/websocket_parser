@@ -39,4 +39,12 @@ describe WebSocket::Message do
   it "does not allow a status message without status code" do
     expect{ WebSocket::Message.close(nil, 'Bye') }.to raise_error(ArgumentError)
   end
+
+  it "can create a pong message from a ping message" do
+    ping = WebSocket::Message.ping('Roman Ping Pong')
+    pong = WebSocket::Message.pong(ping)
+
+    pong.type.should    == :pong
+    pong.payload.should == 'Roman Ping Pong'
+  end
 end

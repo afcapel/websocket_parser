@@ -3,13 +3,14 @@ module WebSocket
     attr_reader :type, :mask_key, :status_code, :payload, :status_message
 
     # Return a new ping message
-    def self.ping
-      new('', :ping)
+    def self.ping(payload = '')
+      new(payload, :ping)
     end
 
     # Return a new pong message
-    def self.pong
-      new('', :pong)
+    def self.pong(ping = nil)
+      payload = ping ? ping.payload : ''
+      new(payload, :pong)
     end
 
     # Return a new close message
