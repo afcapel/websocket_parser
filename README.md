@@ -73,7 +73,7 @@ parser.on_close do |status, message|
   socket << WebSocket::Message.close.to_data
   socket.close!
 
-  puts "Client closed connection. Status: #{status}. Reason: #{m}"
+  puts "Client closed connection. Status: #{status}. Reason: #{message}"
 end
 
 parser.on_ping do |payload|
