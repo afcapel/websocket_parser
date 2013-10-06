@@ -1,7 +1,6 @@
 require 'spec_helper'
 
 describe WebSocket::ClientHandshake do
-
   let :handshake_headers do
     {
       "Host"                   => "server.example.com",
@@ -23,8 +22,8 @@ describe WebSocket::ClientHandshake do
   it "can generate an accept response for the client" do
     response = client_handshake.accept_response
 
-    response.headers['Upgrade'].should == 'websocket'
-    response.headers['Connection'].should == 'Upgrade'
-    response.headers['Sec-WebSocket-Accept'].should == 's3pPLMBiTxaQ9kYGzzhZRbK+xOo='
+    response.headers['Upgrade'].should eq('websocket')
+    response.headers['Connection'].should eq('Upgrade')
+    response.headers['Sec-WebSocket-Accept'].should eq('s3pPLMBiTxaQ9kYGzzhZRbK+xOo=')
   end
 end

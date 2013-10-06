@@ -30,6 +30,7 @@ module WebSocket
     def initialize
       @data =  ''.force_encoding("ASCII-8BIT")
       @state = :header
+      @current_message = nil
     end
 
     def on_message(&callback)
@@ -69,8 +70,8 @@ module WebSocket
     def next_messages
       Array.new.tap do |messages|
         while msg = next_message do
-           messages << msg
-         end
+          messages << msg
+        end
       end
     end
 
