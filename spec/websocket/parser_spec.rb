@@ -167,7 +167,7 @@ describe WebSocket::Parser do
 
     it "recognizes 256 bytes binary message in a single unmasked frame" do
       data = Array.new(256) { rand(256) }.pack('c*')
-      parser << [0x82, 0x7E, 0x0100].pack('CCS>') + data
+      parser << [0x82, 0x7E, 0x0100].pack('CCn') + data
 
       received_messages.first.should eq(data)
     end

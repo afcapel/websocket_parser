@@ -115,12 +115,12 @@ module WebSocket
 
     def read_extended_payload_length
       if message_size == :medium && @data.size >= 2
-        size = unpack_bytes(2,'S>')
+        size = unpack_bytes(2,'n')
         ParserError.new("Wrong payload length. Expected to be greater than 125") unless size > 125
         size
       elsif message_size == :large && @data.size >= 4
         size = unpack_bytes(8,'Q>')
-         ParserError.new("Wrong payload length. Expected to be greater than 65535") unless size > 65_535
+        ParserError.new("Wrong payload length. Expected to be greater than 65535") unless size > 65_535
         size
       end
     end

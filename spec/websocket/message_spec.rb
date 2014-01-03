@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe WebSocket::Message do
-  it "knows its binary representation" do
+  it "knows binary representation of messages with more than 65,535 bytes" do
     text = 1500.times.collect { 'All work and no play makes Jack a dull boy.' }.join("\n\n")
     message = WebSocket::Message.new(text)
     data = message.to_data
@@ -14,6 +14,37 @@ describe WebSocket::Message do
     first_byte.should  eq(0b10000001) # Text frame with FIN bit set
     second_byte.should eq(0b01111111) # Unmasked. Payload length 127.
     ext_length.should  eq(text.length)
+    payload.should     eq(text)
+  end
+
+  it "knows binary representation of messages between 126 and 65,535 bytes" do
+    text = '0'*127
+    data = WebSocket::Message.new(text).to_data
+
+    # 2 bytes from header + 2 bytes from extended payload length + payload
+    data.size.should eq(2 + 2 + text.length)
+    # extended payload length should respect endianness
+    data[2..3].should eq([0x00, 0x7F].pack('C*'))
+
+    first_byte, second_byte, ext_length, payload = data.unpack("CCna#{text.length}")
+
+    first_byte.should  eq(0b10000001) # Text frame with FIN bit set
+    second_byte.should eq(0b01111110) # Unmasked. Payload length 126.
+    ext_length.should  eq(text.length)
+    payload.should     eq(text)
+  end
+
+  it "knows binary representation of messages with less than 126 bytes" do
+    text = '0'*125
+    data = WebSocket::Message.new(text).to_data
+
+    # 2 bytes from header + payload
+    data.size.should eq(2 + text.length)
+
+    first_byte, second_byte, payload = data.unpack("CC>a#{text.length}")
+
+    first_byte.should  eq(0b10000001) # Text frame with FIN bit set
+    second_byte.should eq(0b01111101) # Unmasked. Payload length 125.
     payload.should     eq(text)
   end
 
