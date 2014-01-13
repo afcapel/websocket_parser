@@ -41,7 +41,7 @@ describe WebSocket::Message do
     # 2 bytes from header + payload
     data.size.should eq(2 + text.length)
 
-    first_byte, second_byte, payload = data.unpack("CC>a#{text.length}")
+    first_byte, second_byte, payload = data.unpack("CCa#{text.length}")
 
     first_byte.should  eq(0b10000001) # Text frame with FIN bit set
     second_byte.should eq(0b01111101) # Unmasked. Payload length 125.
