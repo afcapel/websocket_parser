@@ -11,7 +11,8 @@ module WebSocket
     end
 
     def initialize(verb, uri, headers = {}, proxy = {}, body = nil, version = '1.1')
-      @verb, @uri, @headers, @proxy, @body, @version = verb, uri, headers, proxy, body, version
+      @verb, @headers, @proxy, @body, @version = verb, headers, proxy, body, version
+      @uri = uri.is_a?(URI) ? uri : URI(uri.to_s)
     end
 
     def errors
@@ -53,7 +54,7 @@ module WebSocket
     end
 
     def to_data
-      data = "#{method.to_s.upcase} #{uri.path} HTTP/#{version}#{CRLF}"
+      data = "#{verb.to_s.upcase} #{uri.path} HTTP/#{version}#{CRLF}"
       @headers.each do |field, value|
         data << "#{field}: #{value}#{CRLF}"
       end

@@ -26,4 +26,20 @@ describe WebSocket::ClientHandshake do
     response.headers['Connection'].should eq('Upgrade')
     response.headers['Sec-WebSocket-Accept'].should eq('s3pPLMBiTxaQ9kYGzzhZRbK+xOo=')
   end
+
+  it "can be seariakized to data" do
+    expected_lines = [
+      "GET / HTTP/1.1",
+      "Host: server.example.com",
+      "Upgrade: websocket",
+      "Connection: Upgrade",
+      "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==",
+      "Origin: http://example.com",
+      "Sec-WebSocket-Protocol: chat, superchat",
+      "Sec-WebSocket-Version: 13",
+      "\r\n"
+    ]
+
+    client_handshake.to_data.should eq expected_lines.join("\r\n")
+  end
 end
