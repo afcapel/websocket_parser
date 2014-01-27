@@ -1,5 +1,7 @@
 module WebSocket
-  class ServerHandshake < Http::Response
+  class ServerHandshake
+    attr_reader :headers
+
     def initialize(headers = {})
       @headers = headers
     end

@@ -1,5 +1,3 @@
-require "http"
-
 require "websocket/version"
 require "websocket/client_handshake"
 require "websocket/server_handshake"

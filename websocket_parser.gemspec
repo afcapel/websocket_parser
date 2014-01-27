@@ -15,8 +15,6 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = WebSocket::VERSION
 
-  gem.add_runtime_dependency 'http'
-
   gem.add_development_dependency 'rake'
   gem.add_development_dependency 'rspec'
 end

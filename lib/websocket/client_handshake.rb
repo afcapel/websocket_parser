@@ -2,10 +2,16 @@ require 'digest/sha1'
 require 'base64'
 
 module WebSocket
-  class ClientHandshake < Http::Request
+  class ClientHandshake
+
+    attr_reader :verb, :uri, :headers, :proxy, :body, :version
 
     def self.accept_token_for(websocket_key)
       Base64.encode64(Digest::SHA1.digest(websocket_key.strip + GUID)).strip
+    end
+
+    def initialize(verb, uri, headers = {}, proxy = {}, body = nil, version = '1.1')
+      @verb, @uri, @headers, @proxy, @body, @version = verb, uri, headers, proxy, body, version
     end
 
     def errors
@@ -18,10 +24,8 @@ module WebSocket
         return false
       end
 
-      # Careful: Http gem changes header capitalization,
-      # so Sec-WebSocket-Version becomes Sec-Websocket-Version
-      if headers['Sec-Websocket-Version'].to_i != PROTOCOL_VERSION
-        errors << "Protocol version not supported '#{headers['Sec-Websocket-Version']}'"
+      if websocket_version_header.to_i != PROTOCOL_VERSION
+        errors << "Protocol version not supported '#{websocket_version_header}'"
         return false
       end
 
@@ -33,12 +37,19 @@ module WebSocket
     end
 
     def response_headers
-      websocket_key = headers['Sec-Websocket-Key']
       {
         'Upgrade'    => 'websocket',
         'Connection' => 'Upgrade',
-        'Sec-WebSocket-Accept' => ClientHandshake.accept_token_for(websocket_key)
+        'Sec-WebSocket-Accept' => ClientHandshake.accept_token_for(websocket_key_header)
       }
+    end
+
+    def websocket_version_header
+      headers['Sec-WebSocket-Version'] || headers['Sec-Websocket-Version']
+    end
+
+    def websocket_key_header
+      headers['Sec-Websocket-Key'] || headers['Sec-WebSocket-Key']
     end
 
     def to_data
