@@ -50,11 +50,11 @@ describe WebSocket::Message do
 
   it "can be masked" do
     message = WebSocket::Message.new('The man with the Iron Mask')
-    message.masked?.should be_false
+    message.masked?.should be_falsey
 
     message.mask!
 
-    message.masked?.should be_true
+    message.masked?.should be_truthy
   end
 
   it "allows status codes for control frames" do

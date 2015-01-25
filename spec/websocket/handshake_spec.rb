@@ -16,7 +16,7 @@ describe WebSocket::ClientHandshake do
   let(:client_handshake) { WebSocket::ClientHandshake.new(:get, '/', handshake_headers) }
 
   it "can validate handshake format" do
-    client_handshake.valid?.should be_true
+    client_handshake.valid?.should be_truthy
   end
 
   it "can generate an accept response for the client" do
