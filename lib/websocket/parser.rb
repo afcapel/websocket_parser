@@ -190,7 +190,7 @@ module WebSocket
       when :ping
         @on_ping.call(@current_message) if @on_ping
       when :pong
-        @on_pong.call(@current_message) if @on_ping
+        @on_pong.call(@current_message) if @on_pong
       when :close
         status_code, message = @current_message.unpack('S<a*')
         status = STATUS_CODES[status_code]
