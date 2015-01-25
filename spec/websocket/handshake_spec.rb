@@ -16,15 +16,15 @@ describe WebSocket::ClientHandshake do
   let(:client_handshake) { WebSocket::ClientHandshake.new(:get, '/', handshake_headers) }
 
   it "can validate handshake format" do
-    client_handshake.valid?.should be_truthy
+    expect(client_handshake.valid?).to be_truthy
   end
 
   it "can generate an accept response for the client" do
     response = client_handshake.accept_response
 
-    response.headers['Upgrade'].should eq('websocket')
-    response.headers['Connection'].should eq('Upgrade')
-    response.headers['Sec-WebSocket-Accept'].should eq('s3pPLMBiTxaQ9kYGzzhZRbK+xOo=')
+    expect(response.headers['Upgrade']).to eq('websocket')
+    expect(response.headers['Connection']).to eq('Upgrade')
+    expect(response.headers['Sec-WebSocket-Accept']).to eq('s3pPLMBiTxaQ9kYGzzhZRbK+xOo=')
   end
 
   it "can be seariakized to data" do
@@ -40,6 +40,6 @@ describe WebSocket::ClientHandshake do
       "\r\n"
     ]
 
-    client_handshake.to_data.should eq expected_lines.join("\r\n")
+    expect(client_handshake.to_data).to eq expected_lines.join("\r\n")
   end
 end
