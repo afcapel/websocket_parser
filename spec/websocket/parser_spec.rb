@@ -56,7 +56,7 @@ describe WebSocket::Parser do
     expect(received_messages.first).to eq('Once upon a time')
   end
 
-  it "can receive succesive messages" do
+  it "can receive successive messages" do
     msg1 = WebSocket::Message.new('Now is the winter of our discontent')
     msg2 = WebSocket::Message.new('Made glorious summer by this sun of York')
 
